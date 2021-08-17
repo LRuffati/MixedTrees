@@ -34,6 +34,26 @@ class AttributeChild(Child):
         return [self.el]
 
 
+class NoneChild(Child):
+    def __init__(self, attr):
+        self.attr = attr
+        self.v = None
+
+    def apply(self, object):
+        setattr(object, self.attr, self.v)
+
+    def map(self, parent, func, *args,mxd_tree_apply=True, **kwargs):
+        try:
+            v = func(None, *args, **kwargs)
+            if mxd_tree_apply:
+                self.apply(parent)
+        except Exception:
+            pass # If function doesn't apply to none just leave it as none
+
+    def list(self):
+        return []
+
+
 class ContainerChild(Child):
     def __init__(self, attr, el, path):
         self.type = type(el)
@@ -85,14 +105,19 @@ class MixedTree:
         list_c = self._mixed_children.get(path, [])
         res = []
         for attr in list_c:
-            el = self.__getattribute__(attr)
+            try:
+                el = self.__getattribute__(attr)
+            except AttributeError:
+                raise MixedTreeException("Instance: ",repr(self), " lacks attribute: ",attr)
+
             if isinstance(el, MixedTree):
                 res.append(AttributeChild(attr, el, path))
             elif isinstance(el, list) or isinstance(el, tuple):
                 res.append(ContainerChild(attr, el, path))
+            elif el is None:
+                res.append(NoneChild(attr))
             else:
-                raise MixedTreeException("Attribute ", attr, " of ", repr(self),
-                                         " is not a node nor a list or tuple of nodes")
+                raise MixedTreeException("No valid element in attribute '",attr,"' of: ", self)
 
         if detailed:
             return res
