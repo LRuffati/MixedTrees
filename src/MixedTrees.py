@@ -54,6 +54,23 @@ class NoneChild(Child):
         return []
 
 
+class LeafChild(Child):
+    def __init__(self, attr, el):
+        self.attr = attr
+        self.v = el
+
+    def apply(self, object):
+        setattr(object, self.attr, self.v)
+
+    def map(self, parent, func, *args, mxd_tree_apply=True, **kwargs):
+        v = func(self.v, *args, **kwargs)
+        if mxd_tree_apply:
+            self.apply(parent)
+
+    def list(self):
+        return [self.v]
+
+
 class ContainerChild(Child):
     def __init__(self, attr, el, path):
         self.type = type(el)
@@ -66,8 +83,20 @@ class ContainerChild(Child):
         setattr(object, self.attr, new_att)
 
     def map(self, parent, func, *args,mxd_tree_apply=True, **kwargs):
-        self.lst = [i.mxdt_map(func, *args, path=self.path,
-                               mxd_tree_apply=mxd_tree_apply, **kwargs) for i in self.lst]
+        lst = []
+        for i in self.lst:
+            typ = type(i)
+            if issubclass(typ, MixedTree) and typ.has_pat(self.path):
+                lst.append(i.mxdt_map(func, *args, path=self.path, mxd_tree_apply=mxd_tree_apply, **kwargs))
+            elif i is None:
+                try:
+                    lst.append(func(None, *args, **kwargs))
+                except:
+                    lst.append(None)
+            else:
+                lst.append(func(i, *args, **kwargs))
+
+        self.lst = lst
         if mxd_tree_apply:
             self.apply(parent)
 
@@ -117,7 +146,7 @@ class MixedTree:
             elif el is None:
                 res.append(NoneChild(attr))
             else:
-                raise MixedTreeException("No valid element in attribute '",attr,"' of: ", self)
+                res.append(LeafChild(attr, el))
 
         if detailed:
             return res
