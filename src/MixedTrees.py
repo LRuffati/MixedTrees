@@ -23,10 +23,10 @@ class AttributeChild(Child):
         setattr(object, self.attr, self.el)
 
     def map(self, parent, func, *args,mxd_tree_apply=True, **kwargs):
-        self.el = self.el.map(func, *args,
-                              path=self.path,
-                              mxd_tree_apply=mxd_tree_apply,
-                              **kwargs)
+        self.el = self.el.mxdt_map(func, *args,
+                                   path=self.path,
+                                   mxd_tree_apply=mxd_tree_apply,
+                                   **kwargs)
         if mxd_tree_apply:
             self.apply(parent)
 
@@ -66,8 +66,8 @@ class ContainerChild(Child):
         setattr(object, self.attr, new_att)
 
     def map(self, parent, func, *args,mxd_tree_apply=True, **kwargs):
-        self.lst = [i.map(func, *args, path=self.path,
-                          mxd_tree_apply=mxd_tree_apply, **kwargs) for i in self.lst]
+        self.lst = [i.mxdt_map(func, *args, path=self.path,
+                               mxd_tree_apply=mxd_tree_apply, **kwargs) for i in self.lst]
         if mxd_tree_apply:
             self.apply(parent)
 
@@ -75,10 +75,10 @@ class ContainerChild(Child):
         return self.lst
 
 class MixedTree:
-    _mixed_children = None
+    _mxdt_children = None
 
     def __init_subclass__(cls, paths_list=None, **kwargs):
-        inherited_attrs = cls._mixed_children
+        inherited_attrs = cls._mxdt_children
         if inherited_attrs is None:
             inherited_attrs = {}
         else:
@@ -91,18 +91,18 @@ class MixedTree:
             prev = inherited_attrs.get(p, [])
             prev.extend(kwargs.pop(p))
             inherited_attrs[p] = prev
-        cls._mixed_children = inherited_attrs
+        cls._mxdt_children = inherited_attrs
         super().__init_subclass__(**kwargs)
 
-    def list_mixed_children(self, path=None, detailed=False):
-        if (path is None) and (len(self._mixed_children)!=1):
+    def mxdt_list_children(self, path=None, detailed=False):
+        if (path is None) and (len(self._mxdt_children) != 1):
             raise MixedTreeException("Specify which path for trees with"
                                      "multiple paths")
 
         if path is None:
-            path = list(self._mixed_children.keys())[0]
+            path = list(self._mxdt_children.keys())[0]
 
-        list_c = self._mixed_children.get(path, [])
+        list_c = self._mxdt_children.get(path, [])
         res = []
         for attr in list_c:
             try:
@@ -124,20 +124,20 @@ class MixedTree:
         else:
             return [it for l in [i.list() for i in res] for it in l]
 
-    def map(self, fun, *args, path=None, mxd_tree_apply=True, **kwargs):
+    def mxdt_map(self, fun, *args, path=None, mxd_tree_apply=True, **kwargs):
         """Replaces each subnode with the result of applying the
         function to the child-node (the node is the first positional
         argument of the function and returns the result of the function
         applied to the node itself"""
-        childs = self.list_mixed_children(path, detailed=True)
+        childs = self.mxdt_list_children(path, detailed=True)
         i: Child
         for i in childs:
             i.map(self, fun, *args, mxd_tree_apply=mxd_tree_apply, **kwargs)
         return fun(self, *args, **kwargs)
 
-    def navigate(self, fun, *args, path=None, **kwargs):
-        self.map(fun, *args, path=path, mxd_tree_apply=False, **kwargs)
+    def mxdt_navigate(self, fun, *args, path=None, **kwargs):
+        self.mxdt_map(fun, *args, path=path, mxd_tree_apply=False, **kwargs)
 
     @classmethod
     def has_pat(cls, path):
-        return path in cls._mixed_children
+        return path in cls._mxdt_children

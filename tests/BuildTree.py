@@ -60,19 +60,19 @@ class BuildTree(unittest.TestCase):
                       TreeNode(29))
 
     def test_children_a(self):
-        self.assertListEqual(self.tree.list_mixed_children('full'),
-                         [3,11,29])
+        self.assertListEqual(self.tree.mxdt_list_children('full'),
+                             [3,11,29])
 
-        self.assertListEqual(self.tree.list_mixed_children('right'),
-                         [11,29])
+        self.assertListEqual(self.tree.mxdt_list_children('right'),
+                             [11,29])
 
     def test_chidren_b(self):
-        self.assertListEqual(self.b1.list_mixed_children('full'),
-                         [5])
-        self.assertListEqual(self.b2.list_mixed_children('full'),
+        self.assertListEqual(self.b1.mxdt_list_children('full'),
+                             [5])
+        self.assertListEqual(self.b2.mxdt_list_children('full'),
                              [13,19,23])
-        self.assertListEqual(self.b2.list_mixed_children('right'),
-                         [19,23,17])
+        self.assertListEqual(self.b2.mxdt_list_children('right'),
+                             [19,23,17])
 
     def test_navigate_full(self):
         """
@@ -80,14 +80,14 @@ class BuildTree(unittest.TestCase):
         but only of head and tail of B
         """
         l = []
-        self.tree.navigate(lambda x:l.append(x.val), path='full')
+        self.tree.mxdt_navigate(lambda x:l.append(x.val), path='full')
         self.assertListEqual(l,
                              [5,3,13,19,23,11,29,2])
         # explores first the children then the parent
 
     def test_navigate_right(self):
         l = []
-        self.tree.navigate(lambda x:l.append(x.val), path="right")
+        self.tree.mxdt_navigate(lambda x:l.append(x.val), path="right")
         self.assertListEqual(l,
                              [19,23,17]+ # first tail, then preview
                              [11]+ # then the value of the node
